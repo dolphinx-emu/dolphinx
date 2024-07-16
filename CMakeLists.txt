@@ -70,18 +70,18 @@ endif()
 # Name of the Dolphin distributor. If you redistribute Dolphin builds (forks,
 # unofficial builds) please consider identifying your distribution with a
 # unique name here.
-set(DISTRIBUTOR "None" CACHE STRING "Name of the distributor.")
+set(DISTRIBUTOR "Dolphitch" CACHE STRING "Name of the distributor.")
 
 set(DOLPHIN_DEFAULT_UPDATE_TRACK "" CACHE STRING "Name of the default update track. If empty, disables auto-update.")
 
-if(UNIX AND NOT APPLE AND NOT ANDROID)
+if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT SWITCH)
   option(ENABLE_X11 "Enables X11 Support" ON)
 endif()
-if(NOT WIN32 AND NOT APPLE AND NOT HAIKU)
+if(NOT WIN32 AND NOT APPLE AND NOT HAIKU AND NOT SWITCH)
   option(ENABLE_EGL "Enables EGL OpenGL Interface" ON)
 endif()
 
-if(NOT ANDROID)
+if(NOT ANDROID AND NOT SWITCH)
   option(ENABLE_CLI_TOOL "Enable dolphin-tool, a CLI-based utility for functions such as managing disc images" ON)
 endif()
 
@@ -93,6 +93,7 @@ endif()
 option(USE_UPNP "Enables UPnP port mapping support" ON)
 option(ENABLE_NOGUI "Enable NoGUI frontend" ON)
 option(ENABLE_QT "Enable Qt (Default)" ON)
+option(ENABLE_NX "Enable Qt (Default)" OFF)
 option(ENABLE_LTO "Enables Link Time Optimization" OFF)
 option(ENABLE_GENERIC "Enables generic build that should run on any little-endian host" OFF)
 option(ENABLE_HEADLESS "Enables running Dolphin as a headless variant" OFF)
@@ -125,7 +126,7 @@ option(OPROFILING "Enable profiling" OFF)
 option(DSPTOOL "Build dsptool" OFF)
 
 # Enable SDL by default on operating systems that aren't Android.
-if(NOT ANDROID)
+if(NOT ANDROID AND NOT SWITCH)
   option(ENABLE_SDL "Enables SDL as a generic controller backend" ON)
 else()
   option(ENABLE_SDL "Enables SDL as a generic controller backend" OFF)
@@ -167,6 +168,11 @@ include(DolphinDisableWarningsMSVC)
 include(DolphinLibraryTools)
 include(GNUInstallDirs)
 include(RemoveCompileFlag)
+
+if(SWITCH)
+  include(SwitchTools)
+  set(ENABLE_NX ON)
+endif ()
 
 # Enable folders for IDE
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -468,6 +474,24 @@ if(ANDROID)
   SET(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 endif()
 
+if(SWITCH)
+  message(STATUS "Building for Switch")
+  if(NOT ENABLE_HEADLESS)
+    add_definitions(-DSWITCH)
+    if(ENABLE_NOGUI)
+      message(STATUS "Building Switch applet, disabling NoGUI frontend.")
+      set(ENABLE_NOGUI 0)
+    endif()
+  else()
+    # Lie to cmake a bit. We are cross compiling to Android
+    # but not as a shared library. We want an executable.
+    set(SWITCH 0)
+  endif()
+  set(USE_UPNP 0)
+  set(ENABLE_QT 0)
+  set(USE_DISCORD_PRESENCE 0)
+endif()
+
 if(ENABLE_HEADLESS)
   message(STATUS "Enabling Headless! Disabling GUI.")
   set(ENABLE_QT 0)
@@ -662,7 +686,7 @@ endif()
 
 dolphin_find_optional_system_library(pugixml Externals/pugixml)
 
-dolphin_find_optional_system_library_pkgconfig(ENET libenet>=1.3.18 enet::enet Externals/enet)
+dolphin_find_optional_system_library_pkgconfig(ENET libenet>=1.3.17 enet::enet Externals/enet)
 
 dolphin_find_optional_system_library_pkgconfig(xxhash libxxhash>=0.8.2 xxhash::xxhash Externals/xxhash)
 
@@ -704,14 +728,16 @@ include_directories(Externals/soundtouch)
 
 dolphin_find_optional_system_library(CUBEB Externals/cubeb)
 
-if(NOT ANDROID)
+if(NOT ANDROID AND NOT SWITCH)
   dolphin_find_optional_system_library_pkgconfig(
     LibUSB libusb-1.0 LibUSB::LibUSB Externals/libusb
   )
   add_definitions(-D__LIBUSB__)
 endif()
 
+if(NOT SWITCH)
 dolphin_find_optional_system_library(SFML Externals/SFML 2.1 COMPONENTS network system)
+endif ()
 
 if(USE_UPNP)
   dolphin_find_optional_system_library(MINIUPNPC Externals/miniupnpc 1.6)
@@ -722,14 +748,14 @@ dolphin_find_optional_system_library(MBEDTLS Externals/mbedtls 2.28)
 
 dolphin_find_optional_system_library(CURL Externals/curl)
 
-if(NOT ANDROID)
+if(NOT ANDROID AND NOT SWITCH)
   dolphin_find_optional_system_library(Iconv Externals/libiconv-1.14)
 else()
   message(STATUS "Using static iconv from Externals")
   add_subdirectory(Externals/libiconv-1.14 EXCLUDE_FROM_ALL)
 endif()
 
-if(NOT ANDROID)
+if(NOT ANDROID AND NOT SWITCH)
   dolphin_find_optional_system_library(HIDAPI Externals/hidapi)
 endif()
 
