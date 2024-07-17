@@ -1,18 +1,6 @@
 add_library(common
   Analytics.cpp
   Analytics.h
-  Assembler/AssemblerShared.cpp
-  Assembler/AssemblerShared.h
-  Assembler/AssemblerTables.cpp
-  Assembler/AssemblerTables.h
-  Assembler/GekkoAssembler.cpp
-  Assembler/GekkoAssembler.h
-  Assembler/GekkoIRGen.cpp
-  Assembler/GekkoIRGen.h
-  Assembler/GekkoLexer.cpp
-  Assembler/GekkoLexer.h
-  Assembler/GekkoParser.cpp
-  Assembler/GekkoParser.h
   Assert.h
   BitField.h
   BitSet.h
@@ -122,8 +110,6 @@ add_library(common
   Semaphore.h
   SettingsHandler.cpp
   SettingsHandler.h
-  SFMLHelper.cpp
-  SFMLHelper.h
   SmallVector.h
   SocketContext.cpp
   SocketContext.h

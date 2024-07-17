@@ -5,10 +5,7 @@ add_executable(dolphin-nx
   MainNX.cpp
 )
 
-find_package(Libnx REQUIRED)
-
 target_sources(dolphin-nx PRIVATE PlatformSwitch.cpp)
-target_link_libraries(dolphin-nx PRIVATE switch::libnx)
 
 set_target_properties(dolphin-nx PROPERTIES
         OUTPUT_NAME dolphin-emu-nx
@@ -23,4 +20,4 @@ PRIVATE
   cpp-optparse
 )
 
-add_nro_target(dolphin-nx)
+nx_create_nro(dolphin-nx)

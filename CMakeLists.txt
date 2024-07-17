@@ -37,9 +37,9 @@ if (MSVC)
     message(FATAL_ERROR "Please update to CMake 3.20 or higher.")
   endif()
 
-  set(CMAKE_C_STANDARD 99)
-  set(CMAKE_CXX_STANDARD 23)
-  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 
 set(COMPILER ${CMAKE_CXX_COMPILER_ID})
@@ -74,14 +74,14 @@ set(DISTRIBUTOR "Dolphitch" CACHE STRING "Name of the distributor.")
 
 set(DOLPHIN_DEFAULT_UPDATE_TRACK "" CACHE STRING "Name of the default update track. If empty, disables auto-update.")
 
-if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT SWITCH)
+if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT NINTENDO_SWITCH)
   option(ENABLE_X11 "Enables X11 Support" ON)
 endif()
-if(NOT WIN32 AND NOT APPLE AND NOT HAIKU AND NOT SWITCH)
+if(NOT WIN32 AND NOT APPLE AND NOT HAIKU AND NOT NINTENDO_SWITCH)
   option(ENABLE_EGL "Enables EGL OpenGL Interface" ON)
 endif()
 
-if(NOT ANDROID AND NOT SWITCH)
+if(NOT ANDROID AND NOT NINTENDO_SWITCH)
   option(ENABLE_CLI_TOOL "Enable dolphin-tool, a CLI-based utility for functions such as managing disc images" ON)
 endif()
 
@@ -126,7 +126,7 @@ option(OPROFILING "Enable profiling" OFF)
 option(DSPTOOL "Build dsptool" OFF)
 
 # Enable SDL by default on operating systems that aren't Android.
-if(NOT ANDROID AND NOT SWITCH)
+if(NOT ANDROID AND NOT NINTENDO_SWITCH)
   option(ENABLE_SDL "Enables SDL as a generic controller backend" ON)
 else()
   option(ENABLE_SDL "Enables SDL as a generic controller backend" OFF)
@@ -169,8 +169,7 @@ include(DolphinLibraryTools)
 include(GNUInstallDirs)
 include(RemoveCompileFlag)
 
-if(SWITCH)
-  include(SwitchTools)
+if(NINTENDO_SWITCH)
   set(ENABLE_NX ON)
 endif ()
 
@@ -474,10 +473,9 @@ if(ANDROID)
   SET(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 endif()
 
-if(SWITCH)
+if(NINTENDO_SWITCH)
   message(STATUS "Building for Switch")
   if(NOT ENABLE_HEADLESS)
-    add_definitions(-DSWITCH)
     if(ENABLE_NOGUI)
       message(STATUS "Building Switch applet, disabling NoGUI frontend.")
       set(ENABLE_NOGUI 0)
@@ -485,7 +483,7 @@ if(SWITCH)
   else()
     # Lie to cmake a bit. We are cross compiling to Android
     # but not as a shared library. We want an executable.
-    set(SWITCH 0)
+    set(NINTENDO_SWITCH 0)
   endif()
   set(USE_UPNP 0)
   set(ENABLE_QT 0)
@@ -728,15 +726,15 @@ include_directories(Externals/soundtouch)
 
 dolphin_find_optional_system_library(CUBEB Externals/cubeb)
 
-if(NOT ANDROID AND NOT SWITCH)
+if(NOT ANDROID AND NOT NINTENDO_SWITCH)
   dolphin_find_optional_system_library_pkgconfig(
     LibUSB libusb-1.0 LibUSB::LibUSB Externals/libusb
   )
   add_definitions(-D__LIBUSB__)
 endif()
 
-if(NOT SWITCH)
-dolphin_find_optional_system_library(SFML Externals/SFML 2.1 COMPONENTS network system)
+if(NOT NINTENDO_SWITCH)
+  dolphin_find_optional_system_library(SFML Externals/SFML 2.1 COMPONENTS network system)
 endif ()
 
 if(USE_UPNP)
@@ -748,14 +746,14 @@ dolphin_find_optional_system_library(MBEDTLS Externals/mbedtls 2.28)
 
 dolphin_find_optional_system_library(CURL Externals/curl)
 
-if(NOT ANDROID AND NOT SWITCH)
+if(NOT ANDROID AND NOT NINTENDO_SWITCH)
   dolphin_find_optional_system_library(Iconv Externals/libiconv-1.14)
 else()
   message(STATUS "Using static iconv from Externals")
   add_subdirectory(Externals/libiconv-1.14 EXCLUDE_FROM_ALL)
 endif()
 
-if(NOT ANDROID AND NOT SWITCH)
+if(NOT ANDROID AND NOT NINTENDO_SWITCH)
   dolphin_find_optional_system_library(HIDAPI Externals/hidapi)
 endif()
 
