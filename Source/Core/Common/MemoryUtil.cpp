@@ -15,6 +15,8 @@
 #ifdef _WIN32
 #include <windows.h>
 #include "Common/StringUtil.h"
+#elif defined(__SWITCH__)
+#include <switch.h>
 #else
 #include <pthread.h>
 #include <stdio.h>
@@ -33,11 +35,15 @@ namespace Common
 {
 // This is purposely not a full wrapper for virtualalloc/mmap, but it
 // provides exactly the primitive operations that Dolphin needs.
+Handle codeMemoryHandle;
 
 void* AllocateExecutableMemory(size_t size)
 {
 #if defined(_WIN32)
   void* ptr = VirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+#elif defined(__SWITCH__)
+  void* ptr = malloc(size);
+  svcCreateCodeMemory(&codeMemoryHandle, ptr, size);
 #else
   int map_flags = MAP_ANON | MAP_PRIVATE;
 #if defined(__APPLE__)
@@ -131,6 +137,9 @@ void* AllocateMemoryPages(size_t size)
 {
 #ifdef _WIN32
   void* ptr = VirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_READWRITE);
+#elif defined(__SWITCH__)
+  void* ptr = malloc(size);
+  svcSetMemoryPermission(ptr, size, Perm_Rw);
 #else
   void* ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 
@@ -148,6 +157,8 @@ void* AllocateAlignedMemory(size_t size, size_t alignment)
 {
 #ifdef _WIN32
   void* ptr = _aligned_malloc(size, alignment);
+#elif defined(__SWITCH__)
+  void* ptr = aligned_alloc(alignment, size);
 #else
   void* ptr = nullptr;
   if (posix_memalign(&ptr, alignment, size) != 0)
@@ -170,6 +181,8 @@ bool FreeMemoryPages(void* ptr, size_t size)
       PanicAlertFmt("FreeMemoryPages failed!\nVirtualFree: {}", GetLastErrorString());
       return false;
     }
+#elif defined(__SWITCH__)
+    free(ptr);
 #else
     if (munmap(ptr, size) != 0)
     {
@@ -202,6 +215,9 @@ bool ReadProtectMemory(void* ptr, size_t size)
     PanicAlertFmt("ReadProtectMemory failed!\nVirtualProtect: {}", GetLastErrorString());
     return false;
   }
+#elif defined(__SWITCH__)
+  svcSetMemoryPermission(ptr, size, Perm_None);
+  return true;
 #else
   if (mprotect(ptr, size, PROT_NONE) != 0)
   {
@@ -221,6 +237,10 @@ bool WriteProtectMemory(void* ptr, size_t size, bool allowExecute)
     PanicAlertFmt("WriteProtectMemory failed!\nVirtualProtect: {}", GetLastErrorString());
     return false;
   }
+#elif defined(__SWITCH__)
+  svcControlCodeMemory(codeMemoryHandle, CodeMapOperation_MapOwner,
+    ptr, size, allowExecute ? Perm_R | Perm_X : Perm_R);
+  return true;
 #elif !(defined(_M_ARM_64) && defined(__APPLE__))
   // MacOS 11.2 on ARM does not allow for changing the access permissions of pages
   // that were marked executable, instead it uses the protections offered by MAP_JIT
@@ -243,6 +263,10 @@ bool UnWriteProtectMemory(void* ptr, size_t size, bool allowExecute)
     PanicAlertFmt("UnWriteProtectMemory failed!\nVirtualProtect: {}", GetLastErrorString());
     return false;
   }
+#elif defined(__SWITCH__)
+  svcControlCodeMemory(codeMemoryHandle, CodeMapOperation_MapOwner,
+    ptr, size, allowExecute ? Perm_Rw | Perm_X : Perm_Rw);
+  return true;
 #elif !(defined(_M_ARM_64) && defined(__APPLE__))
   // MacOS 11.2 on ARM does not allow for changing the access permissions of pages
   // that were marked executable, instead it uses the protections offered by MAP_JIT
@@ -282,6 +306,10 @@ size_t MemPhysical()
   system_info sysinfo;
   get_system_info(&sysinfo);
   return static_cast<size_t>(sysinfo.max_pages * B_PAGE_SIZE);
+#elif defined(__SWITCH__)
+  u64 out;
+  svcGetSystemInfo(&out, 0, INVALID_HANDLE, 0);
+  return out;
 #else
   struct sysinfo memInfo;
   sysinfo(&memInfo);
