@@ -50,8 +50,6 @@ add_library(common
   Debug/Threads.h
   Debug/Watches.cpp
   Debug/Watches.h
-  DynamicLibrary.cpp
-  DynamicLibrary.h
   ENet.cpp
   ENet.h
   EnumFormatter.h
@@ -122,8 +120,6 @@ add_library(common
   Semaphore.h
   SettingsHandler.cpp
   SettingsHandler.h
-  SFMLHelper.cpp
-  SFMLHelper.h
   SmallVector.h
   SocketContext.cpp
   SocketContext.h
@@ -153,6 +149,12 @@ add_library(common
   WindowSystemInfo.h
   WorkQueueThread.h
 )
+
+if(NOT SWITCH)
+  target_sources(common PRIVATE 
+  DynamicLibrary.cpp
+  DynamicLibrary.h)
+endif()
 
 add_dependencies(common dolphin_scmrev)
 
