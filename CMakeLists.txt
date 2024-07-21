@@ -30,6 +30,11 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE "${CMAKE_CURRENT_SOURCE_DIR}/CMake/FlagsOverr
 
 project(dolphin-emu)
 
+add_compile_options (
+	-g -Wall -O2 -std=gnu++20
+	-fno-exceptions -fno-rtti
+)
+
 if (MSVC)
   if (POLICY CMP0117)
     # cmake is a weird language. You can't do if(not POLICY)
@@ -37,9 +42,9 @@ if (MSVC)
     message(FATAL_ERROR "Please update to CMake 3.20 or higher.")
   endif()
 
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  set(CMAKE_C_STANDARD 99)
+  set(CMAKE_CXX_STANDARD 23)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 
 set(COMPILER ${CMAKE_CXX_COMPILER_ID})
