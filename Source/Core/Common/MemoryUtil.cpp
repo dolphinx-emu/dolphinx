@@ -16,6 +16,7 @@
 #include <windows.h>
 #include "Common/StringUtil.h"
 #elif defined(__SWITCH__)
+extern char __start__;
 #include <switch.h>
 #else
 #include <pthread.h>
@@ -35,15 +36,43 @@ namespace Common
 {
 // This is purposely not a full wrapper for virtualalloc/mmap, but it
 // provides exactly the primitive operations that Dolphin needs.
-Handle codeMemoryHandle;
-
 void* AllocateExecutableMemory(size_t size)
 {
 #if defined(_WIN32)
   void* ptr = VirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 #elif defined(__SWITCH__)
-  void* ptr = malloc(size);
-  svcCreateCodeMemory(&codeMemoryHandle, ptr, size);
+  // https://github.com/RSDuck/melonDS/tree/switch-new/src/ARMJIT_A64/ARMJIT_Compiler.cpp#L223-L259
+  void* JitRWBase = aligned_alloc(0x1000, size);
+  void* JitRXStart = (u8*)&__start__ - size - 0x1000;
+  virtmemLock();
+  void* ptr = virtmemFindAslr(size, 0x1000);
+  MemoryInfo info = {};
+  u32 pageInfo = {};
+  int i = 0;
+  while (JitRXStart != nullptr)
+  {
+    svcQueryMemory(&info, &pageInfo, (u64)JitRXStart);
+    if (info.type != MemType_Unmapped)
+      JitRXStart = (void*)((u8*)info.addr - size - 0x1000);
+    else
+      break;
+    if (i++ > 8)
+    {
+      PanicAlertFmt("couldn't find unmapped place for jit memory\n");
+      JitRXStart = nullptr;
+    }
+  }
+
+  assert(JitRXStart != NULL);
+
+  bool succeded = R_SUCCEEDED(svcMapProcessCodeMemory(envGetOwnProcessHandle(), (u64)JitRXStart, (u64)JitRWBase, size));
+  assert(succeded);
+  succeded = R_SUCCEEDED(svcSetProcessMemoryPermission(envGetOwnProcessHandle(), (u64)JitRXStart, size, Perm_Rx));
+  assert(succeded);
+  succeded = R_SUCCEEDED(svcMapProcessMemory(ptr, envGetOwnProcessHandle(), (u64)JitRXStart, size));
+  assert(succeded);
+
+  virtmemUnlock();
 #else
   int map_flags = MAP_ANON | MAP_PRIVATE;
 #if defined(__APPLE__)
@@ -138,7 +167,7 @@ void* AllocateMemoryPages(size_t size)
 #ifdef _WIN32
   void* ptr = VirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_READWRITE);
 #elif defined(__SWITCH__)
-  void* ptr = malloc(size);
+  void* ptr = aligned_alloc(0x1000, size);
   svcSetMemoryPermission(ptr, size, Perm_Rw);
 #else
   void* ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
@@ -217,7 +246,6 @@ bool ReadProtectMemory(void* ptr, size_t size)
   }
 #elif defined(__SWITCH__)
   svcSetMemoryPermission(ptr, size, Perm_None);
-  return true;
 #else
   if (mprotect(ptr, size, PROT_NONE) != 0)
   {
@@ -238,9 +266,7 @@ bool WriteProtectMemory(void* ptr, size_t size, bool allowExecute)
     return false;
   }
 #elif defined(__SWITCH__)
-  svcControlCodeMemory(codeMemoryHandle, CodeMapOperation_MapOwner,
-    ptr, size, allowExecute ? Perm_R | Perm_X : Perm_R);
-  return true;
+  svcSetMemoryPermission(ptr, size, allowExecute ? Perm_Rx : Perm_R);
 #elif !(defined(_M_ARM_64) && defined(__APPLE__))
   // MacOS 11.2 on ARM does not allow for changing the access permissions of pages
   // that were marked executable, instead it uses the protections offered by MAP_JIT
@@ -264,9 +290,7 @@ bool UnWriteProtectMemory(void* ptr, size_t size, bool allowExecute)
     return false;
   }
 #elif defined(__SWITCH__)
-  svcControlCodeMemory(codeMemoryHandle, CodeMapOperation_MapOwner,
-    ptr, size, allowExecute ? Perm_Rw | Perm_X : Perm_Rw);
-  return true;
+  svcSetMemoryPermission(ptr, size, allowExecute ? Perm_Rw | Perm_X : Perm_Rw);
 #elif !(defined(_M_ARM_64) && defined(__APPLE__))
   // MacOS 11.2 on ARM does not allow for changing the access permissions of pages
   // that were marked executable, instead it uses the protections offered by MAP_JIT
