@@ -120,6 +120,9 @@ private:
   void* m_reserved_region = nullptr;
   void* m_memory_handle = nullptr;
   WindowsMemoryFunctions m_memory_functions;
+#elif defined(__SWITCH__)
+  SharedMemory m_shmem;
+  VirtmemReservation* m_reserved_region = nullptr;
 #else
   int m_shm_fd = 0;
   void* m_reserved_region = nullptr;
@@ -179,6 +182,9 @@ public:
 private:
   void* m_memory = nullptr;
   size_t m_size = 0;
+#ifdef __SWITCH__
+  Handle m_handle;
+#endif
 
 #ifdef _WIN32
   void* m_zero_block = nullptr;

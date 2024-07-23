@@ -225,6 +225,8 @@ elseif(WIN32)
 elseif(NINTENDO_SWITCH)
   target_sources(common PRIVATE
     MemArenaNX.cpp
+    NXUtil.h
+    NXUtil.cpp
   )
 else()
   target_sources(common PRIVATE
