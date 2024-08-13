@@ -114,11 +114,13 @@ void AchievementSettingsWidget::CreateLayout()
   m_common_layout->addWidget(m_common_login_button);
   m_common_layout->addWidget(m_common_logout_button);
   m_common_layout->addWidget(m_common_login_failed);
+  // i18n: Settings that affect the functionality of unlocking achievements.
   m_common_layout->addWidget(new QLabel(tr("Function Settings")));
   m_common_layout->addWidget(m_common_hardcore_enabled_input);
   m_common_layout->addWidget(m_common_unofficial_enabled_input);
   m_common_layout->addWidget(m_common_encore_enabled_input);
   m_common_layout->addWidget(m_common_spectator_enabled_input);
+  // i18n: Settings that affect how achievements are displayed while playing.
   m_common_layout->addWidget(new QLabel(tr("Display Settings")));
 #ifdef USE_DISCORD_PRESENCE
   m_common_layout->addWidget(m_common_discord_presence_enabled_input);
@@ -133,8 +135,8 @@ void AchievementSettingsWidget::ConnectWidgets()
 {
   connect(m_common_integration_enabled_input, &QCheckBox::toggled, this,
           &AchievementSettingsWidget::ToggleRAIntegration);
-  connect(m_common_login_button, &QPushButton::pressed, this, &AchievementSettingsWidget::Login);
-  connect(m_common_logout_button, &QPushButton::pressed, this, &AchievementSettingsWidget::Logout);
+  connect(m_common_login_button, &QPushButton::clicked, this, &AchievementSettingsWidget::Login);
+  connect(m_common_logout_button, &QPushButton::clicked, this, &AchievementSettingsWidget::Logout);
   connect(m_common_hardcore_enabled_input, &QCheckBox::toggled, this,
           &AchievementSettingsWidget::ToggleHardcore);
   connect(m_common_unofficial_enabled_input, &QCheckBox::toggled, this,
@@ -266,7 +268,7 @@ void AchievementSettingsWidget::ToggleHardcore()
     if (Config::Get(Config::MAIN_EMULATION_SPEED) < 1.0f)
       Config::SetBaseOrCurrent(Config::MAIN_EMULATION_SPEED, 1.0f);
     Config::SetBaseOrCurrent(Config::FREE_LOOK_ENABLED, false);
-    Settings::Instance().SetCheatsEnabled(false);
+    Config::SetBaseOrCurrent(Config::MAIN_ENABLE_CHEATS, false);
     Settings::Instance().SetDebugModeEnabled(false);
   }
   emit Settings::Instance().EmulationStateChanged(Core::GetState(Core::System::GetInstance()));

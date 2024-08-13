@@ -40,7 +40,7 @@ CMakeLists.txt.user
 # Ignore kdevelop files/dirs
 *.kdev4
 # Ignore IDEA/Clion files/dirs
-/.idea/
+.idea/
 # Ignore Visual Studio Code's working dir
 /.vscode/
 compile_commands.json
