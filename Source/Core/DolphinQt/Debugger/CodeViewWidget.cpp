@@ -585,7 +585,7 @@ void CodeViewWidget::OnContextMenu()
   auto* show_target_memory =
       menu->addAction(tr("Show Target in Memor&y"), this, &CodeViewWidget::OnShowTargetInMemory);
   auto* copy_target_memory =
-      menu->addAction(tr("Copy Tar&get Sddress"), this, &CodeViewWidget::OnCopyTargetAddress);
+      menu->addAction(tr("Copy Tar&get Address"), this, &CodeViewWidget::OnCopyTargetAddress);
   menu->addSeparator();
 
   auto* symbol_rename_action =
@@ -728,7 +728,7 @@ void CodeViewWidget::AutoStep(CodeTrace::AutoStop option)
 
       for (u32 i = 1; i <= 3; i++)
       {
-        if (results.mem_tracked.count(address + i))
+        if (results.mem_tracked.contains(address + i))
           iter++;
         else
           break;
